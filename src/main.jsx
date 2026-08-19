@@ -183,7 +183,16 @@ function App() {
     </>}
 
     <footer>
-      Vocabulary, translations, phonetics and audio references come from LOD / Zenter fir d'Lëtzebuerger Sprooch. Audio is only exposed when the official LOD file successfully loads.
+      <div className="footerSource">
+        Vocabulary, translations, phonetics and audio references come from LOD / Zenter fir d'Lëtzebuerger Sprooch. Audio is only exposed when the official LOD file successfully loads.
+      </div>
+      <div className="footerCredit">
+        <span>Built by <strong>Hossein Pazouki</strong></span>
+        <span className="footerDot">•</span>
+        <a href="https://github.com/hosseinpzk" target="_blank" rel="noreferrer">GitHub ↗</a>
+        <span className="footerDot">•</span>
+        <a href="https://hosseinpzk.github.io/" target="_blank" rel="noreferrer">Portfolio ↗</a>
+      </div>
     </footer>
   </main>
 }
