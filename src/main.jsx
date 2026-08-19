@@ -191,7 +191,7 @@ function App() {
         <span className="footerDot">•</span>
         <a href="https://github.com/hosseinpzk" target="_blank" rel="noreferrer">GitHub ↗</a>
         <span className="footerDot">•</span>
-        <a href="https://hosseinpzk.github.io/" target="_blank" rel="noreferrer">Portfolio ↗</a>
+        <a href="https://hosseinpzk.github.io/portfolio" target="_blank" rel="noreferrer">Portfolio ↗</a>
       </div>
     </footer>
   </main>
