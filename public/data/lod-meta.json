@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-08-19T08:59:24.233Z",
+  "datasetUrl": "https://download.data.public.lu/resources/letzebuerger-online-dictionnaire-lod-linguistesch-daten/20260727-095857/260727-new-lod-art.zip",
+  "total": 26451,
+  "categoryCount": 2,
+  "a1": 0,
+  "a2": 0,
+  "b1StudyGroup": 867,
+  "audioCount": 26451,
+  "phoneticCount": 24455,
+  "notes": [
+    "A1 and A2 are sourced from official LOD category pages when reachable.",
+    "B1 is not an official LOD category in the supplied resources; it is a study grouping based on the supplied 1000-common-words list after excluding A1/A2.",
+    "Audio URLs are official LOD URLs derived from the entry ID. The UI preloads each file and hides the audio button if LOD does not return playable audio. No TTS is used.",
+    "Topic chips prefer official LOD thematic category membership; English-meaning keyword rules fill gaps for the broad learner topics."
+  ]
+}
