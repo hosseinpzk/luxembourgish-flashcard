@@ -92,6 +92,12 @@ function App() {
     setLearned(n)
     localStorage.setItem('lod-learned', JSON.stringify([...n]))
   }
+  function resetProgress() {
+    if (!learned.size) return
+    if (!window.confirm('Reset all learning progress? This will mark every card as not learned.')) return
+    setLearned(new Set())
+    localStorage.removeItem('lod-learned')
+  }
   function playAudio(e) {
     e.stopPropagation()
     if (audioReady && audioRef.current) { audioRef.current.currentTime=0; audioRef.current.play().catch(()=>{}) }
@@ -171,6 +177,7 @@ function App() {
       <section className="secondary">
         <button onClick={shuffle}>⤨ Shuffle</button>
         <button className={learned.has(card.id)?'learned':''} onClick={toggleLearned}>{learned.has(card.id)?'✓ Learned':'Mark learned'}</button>
+        <button className="resetProgress" onClick={resetProgress} disabled={!learned.size}>↺ Reset progress</button>
         <a href={card.lodUrl} target="_blank" rel="noreferrer">Open in LOD ↗</a>
       </section>
     </>}
