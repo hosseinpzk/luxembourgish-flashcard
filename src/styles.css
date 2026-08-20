@@ -3,3 +3,8 @@
 .secondary .resetProgress{border-color:#f8717155;color:#fecaca}.secondary .resetProgress:hover:not(:disabled){background:#7f1d1d66;border-color:#f8717188}.secondary .resetProgress:disabled{opacity:.4;cursor:not-allowed}
 
 .footerSource{margin-bottom:12px}.footerCredit{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;color:#94a3b8;font-size:13px}.footerCredit strong{color:#cbd5e1}.footerCredit a{color:#67e8f9;text-decoration:none;font-weight:700}.footerCredit a:hover{text-decoration:underline}.footerDot{color:#334155}@media(max-width:520px){.footerCredit{gap:7px}.footerDot{display:none}.footerCredit span,.footerCredit a{width:100%;text-align:center}}
+
+.exampleBox{width:min(760px,100%);margin-top:18px;padding:15px 18px;border:1px solid #67e8f92b;background:#0891b214;border-radius:16px}.exampleLabel{font-size:10px;letter-spacing:.16em;font-weight:800;color:#67e8f9;margin-bottom:7px}.exampleSentence{font-size:17px;line-height:1.55;color:#dbeafe;font-weight:550}.flashcard:has(.exampleBox) .answer{min-height:205px}@media(max-width:760px){.exampleSentence{font-size:15px}.exampleBox{padding:13px 14px}.flashcard:has(.exampleBox) .answer{min-height:190px}}
+
+.exampleList{display:flex;flex-direction:column;gap:8px;margin-top:7px}
+.exampleSentence+.exampleSentence{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}

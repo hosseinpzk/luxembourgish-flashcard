@@ -163,6 +163,12 @@ function App() {
           {revealed ? <>
             <div className="language">ENGLISH</div>
             <div className="meaning">{card.en}</div>
+            {!!card.examples?.length && <div className="exampleBox">
+              <div className="exampleLabel">LOD {card.examples.length > 1 ? 'EXAMPLES' : 'EXAMPLE'}</div>
+              <div className="exampleList">
+                {card.examples.slice(0,3).map((example,i)=><div className="exampleSentence" key={`${card.id}-example-${i}`}>{example}</div>)}
+              </div>
+            </div>}
             {!!card.lodCategories?.length && <div className="sourceTags">{card.lodCategories.slice(0,5).map(x=><span key={x.code}>{x.name}</span>)}</div>}
           </> : <button className="reveal">Reveal answer</button>}
         </div>
@@ -191,7 +197,7 @@ function App() {
         <span className="footerDot">•</span>
         <a href="https://github.com/hosseinpzk" target="_blank" rel="noreferrer">GitHub ↗</a>
         <span className="footerDot">•</span>
-        <a href="https://hosseinpzk.github.io/" target="_blank" rel="noreferrer">Portfolio ↗</a>
+        <a href="https://hosseinpzk.github.io/portfolio" target="_blank" rel="noreferrer">Portfolio ↗</a>
       </div>
     </footer>
   </main>

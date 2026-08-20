@@ -73,6 +73,68 @@ function extractPos(n){
   if(/\binterjection|interjektioun|interj\b/.test(s))return 'Interjection'
   return ''
 }
+
+function decodeXml(s){
+  return String(s??'')
+    .replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCodePoint(parseInt(h,16)))
+    .replace(/&#(\d+);/g,(_,d)=>String.fromCodePoint(parseInt(d,10)))
+    .replace(/&apos;/g,"'")
+    .replace(/&quot;/g,'"')
+    .replace(/&gt;/g,'>')
+    .replace(/&lt;/g,'<')
+    .replace(/&amp;/g,'&')
+}
+function xmlText(fragment){
+  return clean(decodeXml(
+    String(fragment??'')
+      .replace(/<[^>]+>/g,' ')
+  ).replace(/\s+([,.;:!?])/g,'$1'))
+}
+
+// LOD examples are explicitly represented in the official XML as:
+// <example id="…"><text>…</text><gloss>…</gloss></example>
+// We only import the <text> value. This deliberately avoids guessing from
+// generic fields such as labels/keywords, which can produce false examples.
+function examplesFromXml(xml){
+  const out=new Map()
+  const itemRe=/<(?:[A-Za-z0-9_-]+:)?ITEM\b[^>]*>[\s\S]*?<\/(?:[A-Za-z0-9_-]+:)?ITEM>/gi
+  for(const m of String(xml).matchAll(itemRe)){
+    const block=m[0]
+    const meta=block.match(/<(?:[A-Za-z0-9_-]+:)?META\b[^>]*\b(?:[A-Za-z0-9_-]+:)?ID=["']([^"']+)["'][^>]*\/?\s*>/i)
+    if(!meta)continue
+    const id=clean(meta[1])
+    const examples=[]
+    const exRe=/<(?:[A-Za-z0-9_-]+:)?example\b[^>]*>[\s\S]*?<\/(?:[A-Za-z0-9_-]+:)?example>/gi
+    for(const exm of block.matchAll(exRe)){
+      const ex=exm[0]
+      const tm=ex.match(/<(?:[A-Za-z0-9_-]+:)?text\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?text>/i)
+      if(!tm)continue
+      const sentence=xmlText(tm[1])
+      if(sentence && sentence.length>=3)examples.push(sentence)
+    }
+    if(examples.length)out.set(id.toLowerCase(),uniq(examples).slice(0,6))
+  }
+  return out
+}
+
+function extractExamples(n){
+  // JSON sources/fallback: only accept a literal <example>.text-like structure.
+  const found=[]
+  walk(n,node=>{
+    for(const [k,v] of Object.entries(node)){
+      if(!/^example$/i.test(k))continue
+      for(const ex of arr(v)){
+        if(!ex||typeof ex!=='object')continue
+        const tk=Object.keys(ex).find(x=>/^text$/i.test(x))
+        if(!tk)continue
+        const sentence=clean(text(ex[tk]).replace(/\s*;\s*/g,' '))
+        if(sentence)found.push(sentence)
+      }
+    }
+  })
+  return uniq(found).slice(0,6)
+}
+
 function embeddedCategories(n){
   const vals=collect(n,k=>/(category|categorie|kategorie|thema|theme|rubrik|list)/i.test(k))
   return uniq(vals.filter(x=>x.length<100)).slice(0,20)
@@ -80,7 +142,7 @@ function embeddedCategories(n){
 function extract(doc){
   return entryCandidates(doc).map(n=>{
     const id=clean(n['@_id']||n.id), lb=extractLb(n), en=extractEnglish(n)
-    return {id,lb,en,ipa:extractIpa(n),pos:extractPos(n),embeddedCategories:embeddedCategories(n)}
+    return {id,lb,en,ipa:extractIpa(n),pos:extractPos(n),examples:extractExamples(n),embeddedCategories:embeddedCategories(n)}
   }).filter(x=>x.id&&x.lb&&x.en)
 }
 
@@ -123,9 +185,23 @@ async function main(){
   const files=[];async function scan(d){for(const e of await fs.readdir(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())await scan(p);else if(/\.(xml|json)$/i.test(e.name))files.push(p)}}await scan(dir)
   console.log(`Parsing ${files.length} source files…`)
   const raw=[]
-  for(const f of files){try{const s=await fs.readFile(f,'utf8');raw.push(...extract(f.endsWith('.json')?JSON.parse(s):parser.parse(s)))}catch(e){console.warn('Skipped',path.basename(f),e.message)}}
+  for(const f of files){
+    try{
+      const s=await fs.readFile(f,'utf8')
+      const isJson=f.endsWith('.json')
+      const parsed=extract(isJson?JSON.parse(s):parser.parse(s))
+      if(!isJson){
+        const exactExamples=examplesFromXml(s)
+        for(const entry of parsed){
+          const ex=exactExamples.get(entry.id.toLowerCase())
+          if(ex?.length)entry.examples=ex
+        }
+      }
+      raw.push(...parsed)
+    }catch(e){console.warn('Skipped',path.basename(f),e.message)}
+  }
   const byId=new Map()
-  for(const c of raw){const k=c.id.toLowerCase();if(!byId.has(k))byId.set(k,c);else{const o=byId.get(k);o.en=uniq([o.en,c.en]).join('; ');o.ipa=o.ipa||c.ipa;o.pos=o.pos||c.pos;o.embeddedCategories=uniq([...o.embeddedCategories,...c.embeddedCategories])}}
+  for(const c of raw){const k=c.id.toLowerCase();if(!byId.has(k))byId.set(k,c);else{const o=byId.get(k);o.en=uniq([o.en,c.en]).join('; ');o.ipa=o.ipa||c.ipa;o.pos=o.pos||c.pos;o.examples=uniq([...(o.examples||[]),...(c.examples||[])]).slice(0,6);o.embeddedCategories=uniq([...o.embeddedCategories,...c.embeddedCategories])}}
 
   console.log('Discovering/scraping official LOD category pages…')
   let cats=[];try{cats=await scrapeCategories({quiet:true})}catch(e){console.warn('Category scrape unavailable:',e.message)}
@@ -151,17 +227,18 @@ async function main(){
     if(c.pos==='Noun')studyTopics.push('Nouns')
     if(c.pos==='Adjective')studyTopics.push('Adjectives')
     return {
-      id:c.id,lb:c.lb,en:c.en,ipa:c.ipa,pos:c.pos,levels:[...new Set(levels)],studyTopics:[...new Set(studyTopics)],lodCategories,
+      id:c.id,lb:c.lb,en:c.en,ipa:c.ipa,pos:c.pos,examples:c.examples||[],levels:[...new Set(levels)],studyTopics:[...new Set(studyTopics)],lodCategories,
       audioUrl:`https://lod.lu/uploads/OGG/${c.id.toLowerCase()}.ogg`,
       audioFallback:`https://lod.lu/uploads/AAC/${c.id.toLowerCase()}.m4a`,
       lodUrl:`https://lod.lu/artikel/${encodeURIComponent(c.id.toUpperCase())}`
     }
   }).sort((a,b)=>a.lb.localeCompare(b.lb,'lb'))
   await fs.mkdir(path.dirname(OUT),{recursive:true});await fs.writeFile(OUT,JSON.stringify(cards))
-  const meta={generatedAt:new Date().toISOString(),datasetUrl:url,total:cards.length,categoryCount:cats.length,a1:cards.filter(x=>x.levels.includes('A1')).length,a2:cards.filter(x=>x.levels.includes('A2')).length,b1StudyGroup:cards.filter(x=>x.levels.includes('B1')).length,audioCount:cards.length,phoneticCount:cards.filter(x=>x.ipa).length,notes:[
+  const meta={generatedAt:new Date().toISOString(),datasetUrl:url,total:cards.length,categoryCount:cats.length,a1:cards.filter(x=>x.levels.includes('A1')).length,a2:cards.filter(x=>x.levels.includes('A2')).length,b1StudyGroup:cards.filter(x=>x.levels.includes('B1')).length,audioCount:cards.length,phoneticCount:cards.filter(x=>x.ipa).length,exampleCount:cards.filter(x=>x.examples?.length).length,notes:[
     'A1 and A2 are sourced from official LOD category pages when reachable.',
     'B1 is not an official LOD category in the supplied resources; it is a study grouping based on the supplied 1000-common-words list after excluding A1/A2.',
     'Audio URLs are official LOD URLs derived from the entry ID. The UI preloads each file and hides the audio button if LOD does not return playable audio. No TTS is used.',
+    'Usage examples are extracted from the official LOD open-data article content and shown only after Reveal. No generated example sentences are used.',
     'Topic chips prefer official LOD thematic category membership; English-meaning keyword rules fill gaps for the broad learner topics.'
   ]}
   await fs.writeFile(META,JSON.stringify(meta,null,2));console.log(meta)
