@@ -120,7 +120,7 @@ function App() {
       <div>
         <div className="eyebrow">OFFICIAL LOD DATA • LËTZEBUERGESCH → ENGLISH</div>
         <h1>Luxembourgish Flashcards</h1>
-        <p>Learn from the complete LOD dataset. Official LOD audio only — no text-to-speech.USE -> key for next, <- key for previous, ^ up key for play sound, and space key to reveal.</p>
+        <p>Learn from the complete LOD dataset. Official LOD audio only — no text-to-speech.</p>
       </div>
       <div className="stats">
         <div><strong>{cards.length.toLocaleString()}</strong><span>cards</span></div>
@@ -153,6 +153,9 @@ function App() {
             {card.pos && <span className="badge">{card.pos}</span>}
           </div>
           {audioReady && <button className="audio" onClick={playAudio} aria-label="Play official LOD pronunciation">🔊 <span>LOD audio</span></button>}
+        </div>
+        <div>
+         USE -> key for next, <- key for previous, ^ up key for play sound, and space key to reveal!
         </div>
         <div className="front">
           <div className="language">LËTZEBUERGESCH</div>
