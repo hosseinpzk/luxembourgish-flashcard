@@ -120,7 +120,7 @@ function App() {
       <div>
         <div className="eyebrow">OFFICIAL LOD DATA • LËTZEBUERGESCH → ENGLISH</div>
         <h1>Luxembourgish Flashcards</h1>
-        <p>Learn from the complete LOD dataset. Official LOD audio only — no text-to-speech.<b>"USE -> key for next, <- key for previous, ^ up key for play sound, and space key to reveal."</b></p>
+        <p>Learn from the complete LOD dataset. Official LOD audio only — no text-to-speech.USE -> key for next, <- key for previous, ^ up key for play sound, and space key to reveal.</p>
       </div>
       <div className="stats">
         <div><strong>{cards.length.toLocaleString()}</strong><span>cards</span></div>
