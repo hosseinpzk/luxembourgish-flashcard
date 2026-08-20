@@ -152,10 +152,7 @@ function App() {
             {(card.levels||[]).map(x=><span className="badge level" key={x}>{x}</span>)}
             {card.pos && <span className="badge">{card.pos}</span>}
           </div>
-          {audioReady && <button className="audio" onClick={playAudio} aria-label="Play official LOD pronunciation">🔊 <span>LOD audio</span></button>}
-        </div>
-        <div>
-         USE `{'->'}` key for next, `{'<-'}` key for previous, `{'^'}` up key for play sound, and space key to reveal!
+          {audioReady && <button className="audio" onClick={playAudio} aria-label="Play official LOD pronunciation">🔊 <span>LOD audio or click ^ </span></button>}
         </div>
         <div className="front">
           <div className="language">LËTZEBUERGESCH</div>
