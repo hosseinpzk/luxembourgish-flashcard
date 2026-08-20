@@ -109,7 +109,7 @@ function App() {
       if (e.code === 'Space') { e.preventDefault(); setRevealed(v=>!v) }
       if (e.key === 'ArrowRight') move(1)
       if (e.key === 'ArrowLeft') move(-1)
-      if (e.key === 'ArrowUp') playAudio()
+      if (e.key === 'ArrowUp') playAudio(e)
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
