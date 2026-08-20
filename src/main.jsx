@@ -155,7 +155,7 @@ function App() {
           {audioReady && <button className="audio" onClick={playAudio} aria-label="Play official LOD pronunciation">🔊 <span>LOD audio</span></button>}
         </div>
         <div>
-         USE -> key for next, <- key for previous, ^ up key for play sound, and space key to reveal!
+         USE `{'->'}` key for next, `{'<-'}` key for previous, `{'^'}` up key for play sound, and space key to reveal!
         </div>
         <div className="front">
           <div className="language">LËTZEBUERGESCH</div>
