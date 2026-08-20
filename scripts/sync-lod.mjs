@@ -92,27 +92,55 @@ function xmlText(fragment){
 }
 
 // LOD examples are explicitly represented in the official XML as:
-// <example id="…"><text>…</text><gloss>…</gloss></example>
-// We only import the <text> value. This deliberately avoids guessing from
-// generic fields such as labels/keywords, which can produce false examples.
+// <example id="…"><text><word>…</word>…</text><gloss>…</gloss></example>
+// We only import the <text> value. The example can contain nested <word>,
+// <inflectedHeadword>, punctuation and other inline elements, so extracting
+// text from the parsed XML tree is much safer than flattening arbitrary labels.
+function directValue(node, wanted){
+  if(!node || typeof node!=='object') return undefined
+  const key=Object.keys(node).find(k=>k.replace(/^.*:/,'').toLowerCase()===wanted.toLowerCase())
+  return key ? node[key] : undefined
+}
+
+function examplesByEntryFromParsed(doc){
+  const out=new Map()
+  walk(doc,node=>{
+    // In the LOD dataset an article/renvoi node has a direct <id> and
+    // <item-adresse>. Restricting to that shape prevents examples from being
+    // attached to unrelated nested ids.
+    const idVal=directValue(node,'id')
+    const addressVal=directValue(node,'item-adresse')
+    if(idVal==null || addressVal==null) return
+    const id=clean(text(idVal))
+    if(!id) return
+    const examples=extractExamples(node)
+    if(examples.length) out.set(id.toLowerCase(),examples)
+  })
+  return out
+}
+
+// Raw-XML fallback for older/newer exports where parser nesting changes.
+// LOD article records use renvoi-* elements (subst, vrb, adj, ...). We map
+// the record's direct <id> to every official <example><text>...</text></example>.
 function examplesFromXml(xml){
   const out=new Map()
-  const itemRe=/<(?:[A-Za-z0-9_-]+:)?ITEM\b[^>]*>[\s\S]*?<\/(?:[A-Za-z0-9_-]+:)?ITEM>/gi
-  for(const m of String(xml).matchAll(itemRe)){
+  const source=String(xml??'')
+  const recordRe=/<(?:[A-Za-z0-9_-]+:)?renvoi-(?:adj|adv|art|conj|int|part|prep|pron|subst|vrb)\b[^>]*>[\s\S]*?<\/(?:[A-Za-z0-9_-]+:)?renvoi-(?:adj|adv|art|conj|int|part|prep|pron|subst|vrb)>/gi
+  for(const m of source.matchAll(recordRe)){
     const block=m[0]
-    const meta=block.match(/<(?:[A-Za-z0-9_-]+:)?META\b[^>]*\b(?:[A-Za-z0-9_-]+:)?ID=["']([^"']+)["'][^>]*\/?\s*>/i)
-    if(!meta)continue
-    const id=clean(meta[1])
+    const idm=block.match(/<(?:[A-Za-z0-9_-]+:)?id\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?id>/i)
+    if(!idm) continue
+    const id=xmlText(idm[1])
+    if(!id) continue
     const examples=[]
     const exRe=/<(?:[A-Za-z0-9_-]+:)?example\b[^>]*>[\s\S]*?<\/(?:[A-Za-z0-9_-]+:)?example>/gi
     for(const exm of block.matchAll(exRe)){
-      const ex=exm[0]
-      const tm=ex.match(/<(?:[A-Za-z0-9_-]+:)?text\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?text>/i)
-      if(!tm)continue
+      const tm=exm[0].match(/<(?:[A-Za-z0-9_-]+:)?text\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?text>/i)
+      if(!tm) continue
       const sentence=xmlText(tm[1])
-      if(sentence && sentence.length>=3)examples.push(sentence)
+      if(sentence && sentence.length>=3) examples.push(sentence)
     }
-    if(examples.length)out.set(id.toLowerCase(),uniq(examples).slice(0,6))
+    if(examples.length) out.set(id.toLowerCase(),uniq(examples).slice(0,6))
   }
   return out
 }
@@ -189,12 +217,15 @@ async function main(){
     try{
       const s=await fs.readFile(f,'utf8')
       const isJson=f.endsWith('.json')
-      const parsed=extract(isJson?JSON.parse(s):parser.parse(s))
+      const doc=isJson?JSON.parse(s):parser.parse(s)
+      const parsed=extract(doc)
       if(!isJson){
-        const exactExamples=examplesFromXml(s)
+        const parsedExamples=examplesByEntryFromParsed(doc)
+        const rawExamples=examplesFromXml(s)
         for(const entry of parsed){
-          const ex=exactExamples.get(entry.id.toLowerCase())
-          if(ex?.length)entry.examples=ex
+          const key=entry.id.toLowerCase()
+          const ex=uniq([...(parsedExamples.get(key)||[]),...(rawExamples.get(key)||[])]).slice(0,6)
+          if(ex.length) entry.examples=ex
         }
       }
       raw.push(...parsed)
@@ -233,8 +264,18 @@ async function main(){
       lodUrl:`https://lod.lu/artikel/${encodeURIComponent(c.id.toUpperCase())}`
     }
   }).sort((a,b)=>a.lb.localeCompare(b.lb,'lb'))
+
+  // Safety gate: the official LOD dataset contains many thousands of examples.
+  // If extraction suddenly returns almost none, fail the workflow instead of
+  // deploying a site that silently loses the Beispiller section.
+  const exampleCount=cards.filter(x=>x.examples?.length).length
+  console.log(`Cards with official LOD examples: ${exampleCount.toLocaleString()}`)
+  if(exampleCount < 100){
+    throw new Error(`LOD example extraction validation failed: only ${exampleCount} cards have examples. Deployment stopped to preserve the last good site.`)
+  }
+
   await fs.mkdir(path.dirname(OUT),{recursive:true});await fs.writeFile(OUT,JSON.stringify(cards))
-  const meta={generatedAt:new Date().toISOString(),datasetUrl:url,total:cards.length,categoryCount:cats.length,a1:cards.filter(x=>x.levels.includes('A1')).length,a2:cards.filter(x=>x.levels.includes('A2')).length,b1StudyGroup:cards.filter(x=>x.levels.includes('B1')).length,audioCount:cards.length,phoneticCount:cards.filter(x=>x.ipa).length,exampleCount:cards.filter(x=>x.examples?.length).length,notes:[
+  const meta={generatedAt:new Date().toISOString(),datasetUrl:url,total:cards.length,categoryCount:cats.length,a1:cards.filter(x=>x.levels.includes('A1')).length,a2:cards.filter(x=>x.levels.includes('A2')).length,b1StudyGroup:cards.filter(x=>x.levels.includes('B1')).length,audioCount:cards.length,phoneticCount:cards.filter(x=>x.ipa).length,exampleCount,notes:[
     'A1 and A2 are sourced from official LOD category pages when reachable.',
     'B1 is not an official LOD category in the supplied resources; it is a study grouping based on the supplied 1000-common-words list after excluding A1/A2.',
     'Audio URLs are official LOD URLs derived from the entry ID. The UI preloads each file and hides the audio button if LOD does not return playable audio. No TTS is used.',

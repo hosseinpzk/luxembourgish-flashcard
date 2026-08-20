@@ -27,3 +27,7 @@ After `npm run sync:lod`, official usage examples from the LOD open-data article
 
 ### LOD examples
 Usage examples are read only from the official LOD XML `<example><text>…</text></example>` structure. Labels, glosses and generic fields are not treated as examples.
+
+## LOD example safety check
+
+The sync extracts usage examples only from official LOD `<example><text>...</text></example>` nodes. It uses both parsed-XML and raw XML record matching for compatibility with LOD export changes. If fewer than 100 cards contain examples after a refresh, `npm run sync:lod` exits with an error so GitHub Pages keeps the last successfully deployed site instead of publishing a build with missing examples.

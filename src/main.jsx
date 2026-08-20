@@ -109,6 +109,7 @@ function App() {
       if (e.code === 'Space') { e.preventDefault(); setRevealed(v=>!v) }
       if (e.key === 'ArrowRight') move(1)
       if (e.key === 'ArrowLeft') move(-1)
+      if (e.key === 'ArrowUp') playAudio(e)
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
@@ -151,7 +152,7 @@ function App() {
             {(card.levels||[]).map(x=><span className="badge level" key={x}>{x}</span>)}
             {card.pos && <span className="badge">{card.pos}</span>}
           </div>
-          {audioReady && <button className="audio" onClick={playAudio} aria-label="Play official LOD pronunciation">🔊 <span>LOD audio</span></button>}
+          {audioReady && <button className="audio" onClick={playAudio} aria-label="Play official LOD pronunciation">🔊 <span>LOD audio or Click ⬆️ </span></button>}
         </div>
         <div className="front">
           <div className="language">LËTZEBUERGESCH</div>
@@ -176,9 +177,9 @@ function App() {
       </section>
 
       <section className="controls">
-        <button onClick={()=>move(-1)}>← Previous</button>
+        <button onClick={()=>move(-1)}> ⬅️ Previous</button>
         <div className="counter">{(idx+1).toLocaleString()} / {filtered.length.toLocaleString()}</div>
-        <button onClick={()=>move(1)}>Next →</button>
+        <button onClick={()=>move(1)}>Next ➡️ </button>
       </section>
       <section className="secondary">
         <button onClick={shuffle}>⤨ Shuffle</button>
