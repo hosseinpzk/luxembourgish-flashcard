@@ -122,6 +122,7 @@ function App() {
       if (e.key === 'ArrowRight') nextCard()
       if (e.key === 'ArrowLeft') move(-1)
       if (e.key === 'ArrowUp') playAudio(e)
+	  if (e.key === 'ArrowDown') toggleShuffle()  
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
