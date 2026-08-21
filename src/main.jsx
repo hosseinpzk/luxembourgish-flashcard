@@ -15,6 +15,7 @@ function App() {
   const [revealed, setRevealed] = useState(false)
   const [learned, setLearned] = useState(() => new Set(JSON.parse(localStorage.getItem('lod-learned') || '[]')))
   const [audioReady, setAudioReady] = useState(false)
+  const [shuffleMode, setShuffleMode] = useState(false)
   const audioRef = useRef(null)
 
   useEffect(() => {
@@ -79,11 +80,22 @@ function App() {
     if (!filtered.length) return
     setIdx(i => (i + delta + filtered.length) % filtered.length)
   }
-  function shuffle() {
-    if (filtered.length < 2) return
+  function nextCard() {
+    if (!filtered.length) return
+    if (!shuffleMode || filtered.length < 2) {
+      move(1)
+      return
+    }
+
     let next = idx
-    while (next === idx) next = Math.floor(Math.random()*filtered.length)
+    while (next === idx) {
+      next = Math.floor(Math.random() * filtered.length)
+    }
     setIdx(next)
+  }
+
+  function toggleShuffle() {
+    setShuffleMode(v => !v)
   }
   function toggleLearned() {
     if (!card) return
@@ -107,7 +119,7 @@ function App() {
     const key = e => {
       if (e.target.matches('input,select,textarea')) return
       if (e.code === 'Space') { e.preventDefault(); setRevealed(v=>!v) }
-      if (e.key === 'ArrowRight') move(1)
+      if (e.key === 'ArrowRight') nextCard()
       if (e.key === 'ArrowLeft') move(-1)
       if (e.key === 'ArrowUp') playAudio(e)
     }
@@ -179,10 +191,17 @@ function App() {
       <section className="controls">
         <button onClick={()=>move(-1)}> ⬅️ Previous</button>
         <div className="counter">{(idx+1).toLocaleString()} / {filtered.length.toLocaleString()}</div>
-        <button onClick={()=>move(1)}>Next ➡️ </button>
+        <button onClick={nextCard}>Next ➡️ </button>
       </section>
       <section className="secondary">
-        <button onClick={shuffle}>⤨ Shuffle</button>
+        <button
+          className={shuffleMode ? 'shuffleToggle active' : 'shuffleToggle'}
+          onClick={toggleShuffle}
+          aria-pressed={shuffleMode}
+          title={shuffleMode ? 'Shuffle mode is active. Next will choose a random card.' : 'Turn on shuffle mode'}
+        >
+          ⤨ Shuffle {shuffleMode ? 'ON' : 'OFF'}
+        </button>
         <button className={learned.has(card.id)?'learned':''} onClick={toggleLearned}>{learned.has(card.id)?'✓ Learned':'Mark learned'}</button>
         <button className="resetProgress" onClick={resetProgress} disabled={!learned.size}>↺ Reset progress</button>
         <a href={card.lodUrl} target="_blank" rel="noreferrer">Open in LOD ↗</a>
