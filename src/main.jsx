@@ -15,7 +15,7 @@ function App() {
   const [revealed, setRevealed] = useState(false)
   const [learned, setLearned] = useState(() => new Set(JSON.parse(localStorage.getItem('lod-learned') || '[]')))
   const [audioReady, setAudioReady] = useState(false)
-  const [shuffleMode, setShuffleMode] = useState(false)
+  const [shuffleMode, setShuffleMode] = useState(true)
   const audioRef = useRef(null)
 
   useEffect(() => {
