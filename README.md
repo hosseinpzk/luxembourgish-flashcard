@@ -1,6 +1,6 @@
 # Luxembourgish LOD Flashcards
 
-React + Vite flashcards built around the official **Lëtzebuerger Online Dictionnaire (LOD)** data.
+React + Vite flashcards built around the official **Lëtzebuerger Online Dictionnaire (LOD)** data..
 
 ## Features
 
